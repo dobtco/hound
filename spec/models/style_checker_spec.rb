@@ -1,11 +1,14 @@
-require "attr_extras"
-require "rubocop"
-require "coffeelint"
-require "fast_spec_helper"
 require "active_support/core_ext"
+require "attr_extras"
+require "coffeelint"
+require "rubocop"
+
+require "fast_spec_helper"
+require "app/models/line_message"
+require "app/models/repo_config"
 require "app/models/style_checker"
 require "app/models/violation"
-require "app/models/repo_config"
+require "app/models/file_violations"
 Dir.glob("app/models/style_guide/*.rb", &method(:require))
 
 describe StyleChecker, '#violations' do
@@ -22,7 +25,8 @@ describe StyleChecker, '#violations' do
 
     style_checker = StyleChecker.new(pull_request)
 
-    expect(style_checker.violations).to eq [expected]
+    expect(style_checker.violations.size).to eq 1
+    expect(style_checker.violations.first).to eql(expected)
   end
 
   context "when given a Ruby file" do
@@ -98,12 +102,13 @@ describe StyleChecker, '#violations' do
 
   def stub_modified_file(filename, contents)
     formatted_contents = "#{contents}\n"
+    line = double("Line", content: "blah", number: 1, patch_position: 2)
     double(
       filename.split(".").first,
       filename: filename,
       content: formatted_contents,
       removed?: false,
-      modified_line_at: 1
+      modified_line_at: line,
     )
   end
 end

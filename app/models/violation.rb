@@ -1,8 +1,18 @@
 # Hold file, line, and violation message values.
 # Built by style guides.
 # Printed by Commenter.
-class Violation < Struct.new(:filename, :line, :messages)
-  def line_number
-    line.line_number
+class Violation
+  attr_initialize :filename, :line, :messages
+
+  def patch_position
+    @line.patch_position
+  end
+
+  def add_message(message)
+    @messages << message
+  end
+
+  def messages
+    @messages.uniq
   end
 end

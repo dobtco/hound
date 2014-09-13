@@ -18,9 +18,7 @@ class StyleChecker
   attr_reader :pull_request, :style_guides
 
   def files_to_check
-    pull_request.pull_request_files.select do |file|
-      !file.removed? && style_guide(file.filename).enabled?
-    end
+    pull_request.pull_request_files.reject(&:removed?)
   end
 
   def style_guide(filename)

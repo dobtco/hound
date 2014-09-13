@@ -5,16 +5,14 @@ module StyleGuide
 
     private
 
-    def excluded_file?(file)
-      config.file_to_exclude?(file.filename)
-    end
-
-    def uniq_messages_from_violations(violations)
-      violations.map(&:message).uniq
-    end
-
-    def violations_per_line(file)
-      team.inspect_file(parsed_source(file)).group_by(&:line)
+    def violation_messages(file)
+      if config.file_to_exclude?(file.filename)
+        []
+      else
+        team.inspect_file(parsed_source(file)).map do |violation|
+          LineMessage.new(violation.line, violation.message)
+        end
+      end
     end
 
     def team

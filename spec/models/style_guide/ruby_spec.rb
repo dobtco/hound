@@ -5,9 +5,11 @@ require "rubocop"
 require "sentry-raven"
 
 require "fast_spec_helper"
+require "app/models/line_message"
 require "app/models/style_guide/base"
 require "app/models/style_guide/ruby"
 require "app/models/violation"
+require "app/models/file_violations"
 
 describe StyleGuide::Ruby, "#violations" do
   context "with default configuration" do
@@ -348,11 +350,12 @@ end
         filename: "lib/test.rb",
         modified_line_at: nil,
       )
-      style_guide = StyleGuide::Ruby.new({})
+      repo_config = double("RepoConfig", enabled_for?: true, for: "")
+      style_guide = StyleGuide::Ruby.new(repo_config)
 
       violations = style_guide.violations_in_file(file)
 
-      expect(violations).to eq []
+      expect(violations.count).to eq 0
     end
   end
 
@@ -428,17 +431,18 @@ end
   private
 
   def violations_in(content, config = nil)
-    repo_config = double("RepoConfig", enabled?: true, for: config)
+    repo_config = double("RepoConfig", enabled_for?: true, for: config)
     style_guide = StyleGuide::Ruby.new(repo_config)
     style_guide.violations_in_file(build_file(content)).flat_map(&:messages)
   end
 
   def build_file(content)
+    line = double("Line", content: "blah", number: 1, patch_position: 2)
     double(
       "CommitFile",
       content: content,
       filename: "lib/test.rb",
-      modified_line_at: 1,
+      modified_line_at: line,
     )
   end
 end

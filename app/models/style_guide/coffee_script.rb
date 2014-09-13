@@ -5,17 +5,10 @@ module StyleGuide
 
     private
 
-    def excluded_file?(_file)
-      false
-    end
-
-    def uniq_messages_from_violations(violations)
-      violations.map { |violation| violation["message"] }.uniq
-    end
-
-    def violations_per_line(file)
-      Coffeelint.lint(file.content, config).
-        group_by { |violation| violation["lineNumber"] }
+    def violation_messages(file)
+      Coffeelint.lint(file.content, config).map do |violation|
+        LineMessage.new(violation["lineNumber"], violation["message"])
+      end
     end
 
     def config
