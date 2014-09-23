@@ -1,4 +1,4 @@
-class ActivationsController < ApplicationController
+class ActivationsController < ApplicationContro  
   class FailedToActivate < StandardError; end
   class CannotActivatePrivateRepo < StandardError; end
 
