@@ -54,7 +54,7 @@ describe ActivationsController, "#create" do
   end
 
   context "when repo is not public" do
-    it "does not activate" do
+    it "still activates ;)" do
       repo = create(:repo, private: true)
       user = create(:user)
       user.repos << repo
@@ -62,10 +62,11 @@ describe ActivationsController, "#create" do
       allow(RepoActivator).to receive(:new).and_return(activator)
       stub_sign_in(user)
 
-      expect { post :create, repo_id: repo.id, format: :json }.to raise_error(
-        ActivationsController::CannotActivatePrivateRepo
-      )
-      expect(activator).not_to have_received(:activate)
+      expect do
+        post :create, repo_id: repo.id, format: :json
+      end.to_not raise_error
+
+      expect(activator).to have_received(:activate)
     end
   end
 end

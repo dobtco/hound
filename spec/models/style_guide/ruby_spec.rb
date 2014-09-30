@@ -14,7 +14,7 @@ describe StyleGuide::Ruby, "#violations_in_file" do
     describe "for { and } as %r literal delimiters" do
       it "returns no violations" do
         expect(violations_in(<<-CODE)).to eq []
-          "test" =~ %r|test|
+          'test' =~ %r|test|
         CODE
       end
     end
@@ -59,7 +59,7 @@ while signed_in? do something end
       it "returns no violations" do
         expect(violations_in(<<-CODE)).to eq []
 def has_something?
-  "something"
+  'something'
 end
         CODE
       end
@@ -359,9 +359,9 @@ end
 
       violations = violations_with_config(config)
 
-      expect(violations).to eq [
+      expect(violations[0]).to eq(
         "Style/HashSyntax: Use the new Ruby 1.9 hash syntax."
-      ]
+      )
     end
 
     context "with old-style syntax" do
