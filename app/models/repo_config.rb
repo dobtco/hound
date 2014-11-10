@@ -42,10 +42,18 @@ class RepoConfig
   def hound_config
     @hound_config ||= begin
       content = load_file(HOUND_CONFIG_FILE)
-      if content.is_a?(Hash)
+      if content && content.is_a?(Hash) && content.present?
         content
       else
-        {}
+        default_hound_config
+      end
+    end
+  end
+
+  def default_hound_config
+    {}.tap do |h|
+      STYLE_GUIDES.each do |x|
+        h[x] = { 'enabled' => true }
       end
     end
   end

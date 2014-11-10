@@ -7,15 +7,15 @@ require "app/models/repo_config"
 describe RepoConfig do
   describe "#enabled_for?" do
     context "with invalid format in Hound config" do
-      it "only returns true for ruby" do
+      it "returns true for all" do
         commit = double("Commit", file_content: <<-EOS.strip_heredoc)
           hello world!
         EOS
         repo_config = RepoConfig.new(commit)
 
-        expect(repo_config).to be_enabled_for("ruby")
-        expect(repo_config).not_to be_enabled_for("coffee_script")
-        expect(repo_config).not_to be_enabled_for("java_script")
+        RepoConfig::STYLE_GUIDES.each do |style_guide_name|
+          expect(repo_config).to be_enabled_for(style_guide_name)
+        end
       end
     end
 
@@ -28,7 +28,7 @@ describe RepoConfig do
         repo_config = RepoConfig.new(commit)
 
         RepoConfig::STYLE_GUIDES.each do |style_guide_name|
-          expect(repo_config).not_to be_enabled_for(style_guide_name)
+          expect(repo_config).to_not be_enabled_for(style_guide_name)
         end
       end
     end
@@ -60,6 +60,7 @@ describe RepoConfig do
         repo_config = RepoConfig.new(commit)
 
         expect(repo_config).to be_enabled_for("ruby")
+        expect(repo_config).to_not be_enabled_for("coffee_script")
       end
     end
 
@@ -72,6 +73,7 @@ describe RepoConfig do
         repo_config = RepoConfig.new(commit)
 
         expect(repo_config).to be_enabled_for("coffee_script")
+        expect(repo_config).to_not be_enabled_for("ruby")
       end
     end
 
@@ -84,6 +86,7 @@ describe RepoConfig do
         repo_config = RepoConfig.new(commit)
 
         expect(repo_config).to be_enabled_for("java_script")
+        expect(repo_config).to_not be_enabled_for("coffee_script")
       end
     end
 
@@ -98,9 +101,7 @@ describe RepoConfig do
           EOS
           repo_config = RepoConfig.new(commit)
 
-          expect(repo_config).to be_enabled_for("ruby")
-          expect(repo_config).not_to be_enabled_for("coffee_script")
-          expect(repo_config).not_to be_enabled_for("java_script")
+          expect(repo_config).to be_enabled_for('ruby')
         end
       end
 
@@ -124,12 +125,13 @@ describe RepoConfig do
     end
 
     context "when there is no Hound config file" do
-      it "returns true for ruby" do
+      it "returns true for all" do
         commit = double("Commit", file_content: nil)
         config = RepoConfig.new(commit)
 
-        expect(config).to be_enabled_for("ruby")
-        expect(config).not_to be_enabled_for("coffee_script")
+        RepoConfig::STYLE_GUIDES.each do |style_guide_name|
+          expect(config).to be_enabled_for(style_guide_name)
+        end
       end
     end
   end
