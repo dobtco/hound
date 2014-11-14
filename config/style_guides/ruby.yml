@@ -2,6 +2,7 @@ AllCops:
   Exclude:
     - db/schema.rb
     - app/views/**/*
+    - preview/**/*
 
 AccessorMethodName:
   Enabled: false
