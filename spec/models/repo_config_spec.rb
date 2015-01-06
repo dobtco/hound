@@ -1,7 +1,6 @@
 require "attr_extras"
 require "json"
 require "fast_spec_helper"
-require "active_support/core_ext/string"
 require "app/models/repo_config"
 
 describe RepoConfig do
@@ -90,6 +89,18 @@ describe RepoConfig do
       end
     end
 
+    context "when SCSS is enabled" do
+      it "returns true for scss" do
+        commit = double("Commit", file_content: <<-EOS.strip_heredoc)
+          scss:
+            enabled: true
+        EOS
+        repo_config = RepoConfig.new(commit)
+
+        expect(repo_config).to be_enabled_for("scss")
+      end
+    end
+
     context "with legacy config file" do
       context "when no style guide is enabled" do
         it "only returns true for ruby" do
@@ -137,7 +148,7 @@ describe RepoConfig do
   end
 
   describe "#for" do
-    context "when ruby config file is specified" do
+    context "when Ruby config file is specified" do
       it "returns parsed config" do
         config = config_for_file("config/rubocop.yml", <<-EOS.strip_heredoc)
           StringLiterals:
@@ -156,7 +167,7 @@ describe RepoConfig do
       end
     end
 
-    context "when coffeescript config file is specified" do
+    context "when CoffeeScript config file is specified" do
       it "returns parsed config" do
         config = config_for_file("coffeelint.json", <<-EOS.strip_heredoc)
           {
@@ -171,6 +182,36 @@ describe RepoConfig do
         expect(result).to eq(
           "no_unnecessary_double_quotes" => { "level" => "error" }
         )
+      end
+    end
+
+    context "when JavaScript config is specified" do
+      context "and filename extension isn't json" do
+        it "returns parsed config" do
+          config = config_for_file(".jshintrc", <<-EOS.strip_heredoc)
+            {
+              "predef": ["hello"]
+            }
+          EOS
+
+          result = config.for("java_script")
+
+          expect(result).to eq("predef" => ["hello"])
+        end
+      end
+
+      context "and contains invalid JSON format" do
+        it "returns an empty config" do
+          config = config_for_file("javascript.json", <<-EOS.strip_heredoc)
+            {
+              "predef": ["myGlobal",]
+            }
+          EOS
+
+          result = config.for("java_script")
+
+          expect(result).to eq({})
+        end
       end
     end
 
@@ -202,6 +243,71 @@ describe RepoConfig do
       end
     end
 
+    describe "#jshint_ignore_file" do
+      context "no specific configuration is present" do
+        it "attempts to load a .jshintignore file" do
+          ignored_files = <<-EOIGNORE.strip_heredoc
+            app/assets/javascripts/*.js
+            public/javascripts/**.js
+          EOIGNORE
+
+          hound_config = <<-EOS
+            java_script:
+              enabled: true
+          EOS
+
+          commit = stub_commit(
+            hound_config: hound_config,
+            ".jshintignore" => ignored_files
+          )
+
+          ignored_files = RepoConfig.new(commit).ignored_javascript_files
+
+          expect(ignored_files).
+            to eq ["app/assets/javascripts/*.js", "public/javascripts/**.js"]
+        end
+      end
+
+      context "custom jshint ignore path provided" do
+        it "uses the custom ignore file" do
+          hound_config = <<-EOS
+            java_script:
+              enabled: true
+              ignore_file: ".js_ignore"
+          EOS
+
+          ignored_files = <<-EOIGNORE.strip_heredoc
+            app/assets/javascripts/*.js
+            public/javascripts/**.js
+          EOIGNORE
+
+          commit = stub_commit(
+            hound_config: hound_config,
+            ".js_ignore" => ignored_files
+          )
+
+          ignored_files = RepoConfig.new(commit).ignored_javascript_files
+
+          expect(ignored_files).
+            to eq ["app/assets/javascripts/*.js", "public/javascripts/**.js"]
+        end
+      end
+    end
+
+    def stub_commit(configuration)
+      commit = double("Commit")
+      hound_config = configuration.delete(:hound_config)
+      allow(commit).to receive(:file_content).
+        with(RepoConfig::HOUND_CONFIG_FILE).and_return(hound_config)
+
+      configuration.each do |filename, contents|
+        allow(commit).to receive(:file_content).
+          with(filename).and_return(contents)
+      end
+
+      commit
+    end
+
     def config_for_file(file_path, content)
       hound_config = <<-EOS.strip_heredoc
         ruby:
@@ -211,15 +317,18 @@ describe RepoConfig do
         coffee_script:
           enabled: true
           config_file: coffeelint.json
-      EOS
-      commit = double("Commit")
-      config = RepoConfig.new(commit)
-      allow(commit).to receive(:file_content).
-        with(RepoConfig::HOUND_CONFIG_FILE).and_return(hound_config)
-      allow(commit).to receive(:file_content).
-        with(file_path).and_return(content)
 
-      config
+        java_script:
+          enabled: true
+          config_file: #{file_path}
+      EOS
+
+      commit = stub_commit(
+        hound_config: hound_config,
+        "#{file_path}" => content
+      )
+
+      RepoConfig.new(commit)
     end
   end
 end

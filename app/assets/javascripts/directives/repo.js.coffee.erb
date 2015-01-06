@@ -55,7 +55,7 @@ App.directive 'repo', ['Subscription', 'StripeCheckout', (Subscription, StripeCh
         else
           deactivateRepo()
       else
-        if false #scope.repo.private
+        if false # scope.repo.price_in_cents > 0
           StripeCheckout.open(
             name: scope.repo.full_plan_name,
             amount: scope.repo.price_in_cents,

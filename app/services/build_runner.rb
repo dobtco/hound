@@ -1,10 +1,16 @@
 class BuildRunner
-  vattr_initialize :payload
+  pattr_initialize :payload
 
   def run
     if repo && relevant_pull_request?
-      repo.builds.create!(violations: violations)
+      create_pending_status
+      repo.builds.create!(
+        violations: violations,
+        pull_request_number: payload.pull_request_number,
+        commit_sha: payload.head_sha,
+      )
       commenter.comment_on_violations(violations)
+      create_success_status
       track_reviewed_repo_for_each_user
     end
   end
@@ -28,11 +34,12 @@ class BuildRunner
   end
 
   def pull_request
-    @pull_request ||= PullRequest.new(payload, ENV['HOUND_GITHUB_TOKEN'])
+    @pull_request ||= PullRequest.new(payload)
   end
 
   def repo
-    @repo ||= Repo.active.where(github_id: payload.github_repo_id).first
+    @repo ||= Repo.active.
+      find_and_update(payload.github_repo_id, payload.full_repo_name)
   end
 
   def track_reviewed_repo_for_each_user
@@ -40,5 +47,25 @@ class BuildRunner
       analytics = Analytics.new(user)
       analytics.track_reviewed(repo)
     end
+  end
+
+  def create_pending_status
+    github.create_pending_status(
+      payload.full_repo_name,
+      payload.head_sha,
+      "Hound is reviewing changes."
+    )
+  end
+
+  def create_success_status
+    github.create_success_status(
+      payload.full_repo_name,
+      payload.head_sha,
+      "Hound has reviewed the changes."
+    )
+  end
+
+  def github
+    @github ||= GithubApi.new
   end
 end

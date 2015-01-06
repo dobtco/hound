@@ -20,3 +20,8 @@ bundle exec rake db:setup
 if [ ! -f .env ]; then
   cp .sample.env .env
 fi
+
+# Set a default port for Foreman to run the server
+if ! grep -qs 'port' .foreman; then
+  printf 'port: 5000\n' >> .foreman
+fi

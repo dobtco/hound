@@ -1,14 +1,15 @@
 class ActivationsController < ApplicationController
   class FailedToActivate < StandardError; end
-  class CannotActivatePrivateRepo < StandardError; end
+  class CannotActivatePaidRepo < StandardError; end
 
   respond_to :json
 
-  # before_action :check_privacy
+  # before_action :check_repo_plan
 
   def create
-    if activator.activate(repo, session[:github_token])
+    if activator.activate
       analytics.track_activated(repo)
+
       render json: repo, status: :created
     else
       report_exception(
@@ -16,21 +17,28 @@ class ActivationsController < ApplicationController
         user_id: current_user.id,
         repo_id: params[:repo_id]
       )
+
       head 502
     end
   end
 
   private
 
+  def check_repo_plan
+    if repo.plan_price > 0
+      raise CannotActivatePaidRepo
+    end
+  end
+
+  def activator
+    RepoActivator.new(repo: repo, github_token: github_token)
+  end
+
   def repo
     @repo ||= current_user.repos.find(params[:repo_id])
   end
 
-  def activator
-    RepoActivator.new
-  end
-
-  def check_privacy
-    raise CannotActivatePrivateRepo if repo.private?
+  def github_token
+    session.fetch(:github_token)
   end
 end

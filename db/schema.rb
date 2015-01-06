@@ -11,37 +11,23 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140808202140) do
+ActiveRecord::Schema.define(version: 20141210070831) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
   create_table "builds", force: true do |t|
-    t.text     "violations"
+    t.text     "violations_archive"
     t.integer  "repo_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string   "uuid",       null: false
+    t.datetime "created_at",          null: false
+    t.datetime "updated_at",          null: false
+    t.string   "uuid",                null: false
+    t.integer  "pull_request_number"
+    t.string   "commit_sha"
   end
 
   add_index "builds", ["repo_id"], name: "index_builds_on_repo_id", using: :btree
   add_index "builds", ["uuid"], name: "index_builds_on_uuid", unique: true, using: :btree
-
-  create_table "delayed_jobs", force: true do |t|
-    t.integer  "priority",   default: 0
-    t.integer  "attempts",   default: 0
-    t.text     "handler"
-    t.text     "last_error"
-    t.datetime "run_at"
-    t.datetime "locked_at"
-    t.datetime "failed_at"
-    t.string   "locked_by"
-    t.string   "queue"
-    t.datetime "created_at",             null: false
-    t.datetime "updated_at",             null: false
-  end
-
-  add_index "delayed_jobs", ["priority", "run_at"], name: "delayed_jobs_priority", using: :btree
 
   create_table "memberships", force: true do |t|
     t.integer  "user_id",    null: false
@@ -64,7 +50,7 @@ ActiveRecord::Schema.define(version: 20140808202140) do
   end
 
   add_index "repos", ["active"], name: "index_repos_on_active", using: :btree
-  add_index "repos", ["github_id"], name: "index_repos_on_github_id", unique: true, using: :btree
+  add_index "repos", ["github_id"], name: "index_repos_on_github_id", using: :btree
 
   create_table "subscriptions", force: true do |t|
     t.datetime "created_at",                                                   null: false
@@ -90,5 +76,17 @@ ActiveRecord::Schema.define(version: 20140808202140) do
   end
 
   add_index "users", ["remember_token"], name: "index_users_on_remember_token", using: :btree
+
+  create_table "violations", force: true do |t|
+    t.datetime "created_at",                  null: false
+    t.datetime "updated_at",                  null: false
+    t.integer  "build_id",                    null: false
+    t.string   "filename",                    null: false
+    t.integer  "patch_position"
+    t.integer  "line_number"
+    t.text     "messages",       default: [], null: false, array: true
+  end
+
+  add_index "violations", ["build_id"], name: "index_violations_on_build_id", using: :btree
 
 end

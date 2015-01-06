@@ -5,10 +5,9 @@ feature "Repo list", js: true do
     user = create(:user)
     repo = create(:repo, full_github_name: "thoughtbot/my-repo")
     repo.users << user
-    stub_user_emails_request(AuthenticationHelper::GITHUB_TOKEN)
     sign_in_as(user)
 
-    visit root_path
+    visit repos_path
 
     expect(page).to have_content repo.full_github_name
   end
@@ -17,24 +16,23 @@ feature "Repo list", js: true do
     user = create(:user)
     repo = create(:repo, full_github_name: "thoughtbot/my-repo")
     repo.users << user
-    stub_user_emails_request(AuthenticationHelper::GITHUB_TOKEN)
-    sign_in_as(user)
 
-    visit root_path
+    sign_in_as(user)
+    visit repos_path
     find(".search").set(repo.full_github_name)
 
     expect(page).to have_content repo.full_github_name
   end
 
   scenario "user syncs repos" do
+    token = "usergithubtoken"
     user = create(:user)
     repo = create(:repo, full_github_name: "user1/test-repo")
     user.repos << repo
-    stub_repo_requests(AuthenticationHelper::GITHUB_TOKEN)
-    stub_user_emails_request(AuthenticationHelper::GITHUB_TOKEN)
-    sign_in_as(user)
+    stub_repo_requests(token)
 
-    visit root_path
+    sign_in_as(user, token)
+    visit repos_path
 
     expect(page).to have_content(repo.full_github_name)
 
@@ -50,27 +48,29 @@ feature "Repo list", js: true do
 
       sign_in_as(user)
 
-      expect(page).to have_content I18n.t("syncing_repos").upcase
+      expect(page).to have_content I18n.t("syncing_repos")
     end
   end
 
   scenario "user activates repo" do
+    token = "usergithubtoken"
     user = create(:user)
     repo = create(:repo, private: false)
     repo.users << user
     hook_url = "http://#{ENV["HOST"]}/builds"
-    stub_repo_request(repo.full_github_name)
-    stub_add_collaborator_request(repo.full_github_name)
-    stub_hook_creation_request(repo.full_github_name, hook_url)
-    stub_user_emails_request(AuthenticationHelper::GITHUB_TOKEN)
+    stub_repo_request(repo.full_github_name, token)
+    stub_add_collaborator_request(repo.full_github_name, token)
+    stub_hook_creation_request(repo.full_github_name, hook_url, token)
+    stub_memberships_request
+    stub_membership_update_request
 
-    sign_in_as(user)
+    sign_in_as(user, token)
     find("li.repo .toggle").click
 
     expect(page).to have_css(".active")
     expect(page).to have_content "1 OF 1"
 
-    visit root_path
+    visit repos_path
 
     expect(page).to have_css(".active")
     expect(page).to have_content "1 OF 1"
@@ -83,20 +83,22 @@ feature "Repo list", js: true do
     hook_url = "http://#{ENV["HOST"]}/builds"
     team_id = 4567 # from fixture
     hound_user = "houndci"
-    stub_repo_with_org_request(repo.full_github_name)
-    stub_hook_creation_request(repo.full_github_name, hook_url)
-    stub_repo_teams_request(repo.full_github_name)
-    stub_user_teams_request
-    stub_add_user_to_team_request(hound_user, team_id)
-    stub_user_emails_request(AuthenticationHelper::GITHUB_TOKEN)
+    token = "usergithubtoken"
+    stub_repo_with_org_request(repo.full_github_name, token)
+    stub_hook_creation_request(repo.full_github_name, hook_url, token)
+    stub_repo_teams_request(repo.full_github_name, token)
+    stub_user_teams_request(token)
+    stub_add_user_to_team_request(hound_user, team_id, token)
+    stub_memberships_request
+    stub_membership_update_request
 
-    sign_in_as(user)
+    sign_in_as(user, token)
     find(".repos .toggle").click
 
     expect(page).to have_css(".active")
     expect(page).to have_content "1 OF 1"
 
-    visit root_path
+    visit repos_path
 
     expect(page).to have_css(".active")
     expect(page).to have_content "1 OF 1"
@@ -107,10 +109,9 @@ feature "Repo list", js: true do
     repo = create(:repo, :active)
     repo.users << user
     stub_hook_removal_request(repo.full_github_name, repo.hook_id)
-    stub_user_emails_request(AuthenticationHelper::GITHUB_TOKEN)
 
     sign_in_as(user)
-    visit root_path
+    visit repos_path
     find(".repos .toggle").click
 
     expect(page).not_to have_css(".active")
@@ -127,10 +128,9 @@ feature "Repo list", js: true do
     repo = create(:repo, :active, private: true)
     repo.users << user
     stub_hook_removal_request(repo.full_github_name, repo.hook_id)
-    stub_user_emails_request(AuthenticationHelper::GITHUB_TOKEN)
 
     sign_in_as(user)
-    visit root_path
+    visit repos_path
     find(".repos .toggle").click
 
     expect(page).not_to have_css(".active")
