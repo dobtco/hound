@@ -23,14 +23,14 @@ linters:
     enabled: true
 
   DuplicateProperty:
-    enabled: true
+    enabled: false
 
   ElsePlacement:
     enabled: true
     style: same_line
 
   EmptyLineBetweenBlocks:
-    enabled: true
+    enabled: false
     ignore_single_line_blocks: true
 
   EmptyRule:
@@ -86,7 +86,7 @@ linters:
     enabled: false
 
   PropertySortOrder:
-    enabled: true
+    enabled: false
     ignore_unspecified: false
     severity: warning
 
@@ -116,13 +116,13 @@ linters:
 
   SingleLinePerProperty:
     enabled: true
-    allow_single_line_rule_sets: true
+    allow_single_line_rule_sets: false
 
   SingleLinePerSelector:
     enabled: true
 
   SpaceAfterComma:
-    enabled: true
+    enabled: false
 
   SpaceAfterPropertyColon:
     enabled: true
