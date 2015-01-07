@@ -7,7 +7,7 @@ linters:
     space_after_bang: false
 
   BorderZero:
-    enabled: false
+    enabled: true
 
   ColorKeyword:
     enabled: true
@@ -41,7 +41,7 @@ linters:
     present: true
 
   HexLength:
-    enabled: false
+    enabled: true
     style: short
 
   HexNotation:
@@ -73,9 +73,7 @@ linters:
     force_nesting: true
 
   NameFormat:
-    enabled: true
-    allow_leading_underscore: true
-    convention: hyphenated_lowercase
+    enabled: false
 
   NestingDepth:
     enabled: true
@@ -83,7 +81,7 @@ linters:
     severity: warning
 
   PlaceholderInExtend:
-    enabled: false
+    enabled: true
 
   PropertySortOrder:
     enabled: false
@@ -164,7 +162,7 @@ linters:
 
   VendorPrefixes:
     enabled: true
-    identifier_list: bourbon
+    identifier_list: base
     include: []
     exclude: []
 
