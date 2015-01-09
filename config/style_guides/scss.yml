@@ -73,7 +73,7 @@ linters:
     force_nesting: true
 
   NameFormat:
-    enabled: true
+    enabled: false
     allow_leading_underscore: true
     convention: hyphenated_lowercase
 
@@ -96,7 +96,7 @@ linters:
 
   QualifyingElement:
     enabled: true
-    allow_element_with_attribute: false
+    allow_element_with_attribute: true
     allow_element_with_class: false
     allow_element_with_id: false
     severity: warning
@@ -142,7 +142,7 @@ linters:
 
   StringQuotes:
     enabled: true
-    style: double_quotes
+    style: single_quotes
 
   TrailingSemicolon:
     enabled: true
