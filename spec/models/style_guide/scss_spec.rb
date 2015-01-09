@@ -13,15 +13,15 @@ describe StyleGuide::Scss do
         end
       end
 
-      describe "for single quotes" do
-        it "has one violation" do
-          content = ".a { display: 'none'; }"
+      # describe "for single quotes" do
+      #   it "has one violation" do
+      #     content = ".a { display: 'none'; }"
 
-          expect(violations_in(content)).to include(
-            "Prefer double-quoted strings"
-          )
-        end
-      end
+      #     expect(violations_in(content)).to include(
+      #       "Prefer double-quoted strings"
+      #     )
+      #   end
+      # end
 
       describe "for no leading zeros" do
         it "has one violation" do
