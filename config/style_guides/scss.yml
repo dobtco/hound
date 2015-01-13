@@ -74,8 +74,6 @@ linters:
 
   NameFormat:
     enabled: false
-    allow_leading_underscore: true
-    convention: hyphenated_lowercase
 
   NestingDepth:
     enabled: true
