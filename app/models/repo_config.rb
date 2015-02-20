@@ -6,7 +6,7 @@ class RepoConfig
     "coffee_script" => "json",
   }
   HOUND_CONFIG_FILE = ".hound.yml"
-  STYLE_GUIDES = %w(ruby coffee_script java_script scss)
+  STYLE_GUIDES = %w(ruby coffee_script java_script)
 
   pattr_initialize :commit
 
