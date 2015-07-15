@@ -1,14 +1,22 @@
-require "attr_extras"
-require "fast_spec_helper"
-require "app/models/style_guide/base"
-require "app/models/style_guide/unsupported"
+require "rails_helper"
 
 describe StyleGuide::Unsupported do
-  describe "#violations_in_file" do
-    it "returns an empty array" do
+  describe "#file_review" do
+    it "raises" do
+      style_guide = StyleGuide::Unsupported.new({}, nil)
+      commit_file = double("CommitFile", filename: "unsupported.f95")
+
+      expect { style_guide.file_review(commit_file) }.to raise_error(
+        StyleGuide::Unsupported::CannotReviewUnsupportedFile
+      )
+    end
+  end
+
+  describe "#file_included?" do
+    it "return false" do
       style_guide = StyleGuide::Unsupported.new({}, nil)
 
-      expect(style_guide.violations_in_file("file.txt")).to eq []
+      expect(style_guide.file_included?(double)).to eq false
     end
   end
 end

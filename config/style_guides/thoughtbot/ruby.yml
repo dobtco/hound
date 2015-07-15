@@ -33,7 +33,8 @@ CharacterLiteral:
   Enabled: false
 
 ClassAndModuleChildren:
-  Enabled: false
+  Enabled: true
+  EnforcedStyle: nested
 
 ClassLength:
   Enabled: false
@@ -42,6 +43,7 @@ ClassVars:
   Enabled: false
 
 CollectionMethods:
+  Enabled: true
   PreferredMethods:
     find: detect
     inject: reduce
@@ -83,6 +85,9 @@ Encoding:
 
 EvenOdd:
   Enabled: false
+
+ExtraSpacing:
+  Enabled: true
 
 FileName:
   Enabled: false
@@ -126,6 +131,10 @@ MethodLength:
 ModuleFunction:
   Enabled: false
 
+MultilineOperationIndentation:
+  Enabled: true
+  EnforcedStyle: indented
+
 NegatedIf:
   Enabled: false
 
@@ -162,6 +171,8 @@ PerlBackrefs:
 PredicateName:
   NamePrefixBlacklist:
     - is_
+  Exclude:
+    - spec/**/*
 
 Proc:
   Enabled: false
@@ -190,11 +201,11 @@ SpecialGlobalVars:
 StringLiterals:
   EnforcedStyle: double_quotes
 
-VariableInterpolation:
-  Enabled: false
-
 TrailingComma:
-  Enabled: false
+  EnforcedStyleForMultiline: comma
+  SupportedStyles:
+    - comma
+    - no_comma
 
 TrivialAccessors:
   Enabled: false

@@ -4,6 +4,7 @@ class SessionsController < ApplicationController
   def create
     user = find_user || create_user
     create_session_for(user)
+    finished("auth_button")
     redirect_to repos_path
   end
 
@@ -25,7 +26,8 @@ class SessionsController < ApplicationController
   def create_user
     user = User.create!(
       github_username: github_username,
-      email_address: github_email_address
+      email_address: github_email_address,
+      utm_source: session[:campaign_params].try(:[], :utm_source),
     )
     flash[:signed_up] = true
     user

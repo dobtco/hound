@@ -1,77 +1,103 @@
 # Load and parse config files from GitHub repo
 class RepoConfig
+  HOUND_CONFIG = ".hound.yml"
+  LANGUAGES = %w(ruby coffeescript javascript scss haml)
   FILE_TYPES = {
     "ruby" => "yaml",
-    "java_script" => "json",
-    "coffee_script" => "json",
+    "javascript" => "json",
+    "coffeescript" => "json",
+    "scss" => "yaml",
+    "haml" => "yaml"
   }
-  HOUND_CONFIG_FILE = ".hound.yml"
-  STYLE_GUIDES = %w(ruby coffee_script java_script)
+
+  class ParserError < StandardError; end
 
   pattr_initialize :commit
 
-  def enabled_for?(style_guide_name)
-    style_guide_name == "ruby" && legacy_config? ||
-      enabled_in_config?(style_guide_name)
+  def enabled_for?(language)
+    options = options_for(language)
+    options.nil? || !disabled?(language)
   end
 
-  def for(style_guide_name)
-    if style_guide_name == "ruby" && legacy_config?
+  def for(language)
+    if language == "ruby" && legacy?
       hound_config
     else
-      config_file_path = config_path_for(style_guide_name)
+      config_file_path = config_path_for(language)
 
       if config_file_path
-        load_file(config_file_path, FILE_TYPES[style_guide_name])
+        load_config(config_file_path, FILE_TYPES.fetch(language))
       else
         {}
       end
     end
   end
 
+  def raw_for(language)
+    config_file_path = config_path_for(language)
+
+    if config_file_path
+      commit.file_content(config_file_path)
+    else
+      ""
+    end
+  end
+
   def ignored_javascript_files
     ignore_file_content = load_javascript_ignore
 
-    if ignore_file_content.present?
-      ignore_file_content.split("\n")
-    else
-      []
+    if ignore_file_content.blank?
+      ignore_file_content = File.read("config/style_guides/.jshintignore")
     end
+
+    ignore_file_content.split("\n")
   end
 
   private
 
-  def enabled_in_config?(name)
-    config = hound_config[name] || hound_config[name.camelize]
-    config && (config["enabled"] == true || config["Enabled"] == true)
+  def options_for(language)
+    hound_config[language] || hound_config[language_camelize(language)]
   end
 
-  def legacy_config?
-    (hound_config.keys & STYLE_GUIDES).empty?
+  def disabled?(language)
+    options = options_for(language)
+    options["enabled"] == false || options["Enabled"] == false
   end
 
   def hound_config
     @hound_config ||= begin
-      content = load_file(HOUND_CONFIG_FILE, 'yaml')
-      if content && content.is_a?(Hash) && content.present?
-        content
+      config = load_file(HOUND_CONFIG, "yaml")
+      if config.is_a?(Hash)
+        convert_legacy_keys(config)
       else
-        default_hound_config
+        {}
       end
     end
   end
 
-  def default_hound_config
-    {}.tap do |h|
-      STYLE_GUIDES.each do |x|
-        h[x] = { 'enabled' => true }
-      end
-    end
+  def legacy?
+    (configured_languages & LANGUAGES).empty?
   end
 
-  def config_path_for(style_guide_name)
-    hound_config[style_guide_name] &&
-      hound_config[style_guide_name]["config_file"]
+  def configured_languages
+    hound_config.keys
+  end
+
+  def config_path_for(language)
+    hound_config[language] &&
+      hound_config[language]["config_file"]
+  end
+
+  def load_config(config_file_path, file_type)
+    main_config = load_file(config_file_path, file_type)
+    inherit_from = Array(main_config.fetch("inherit_from", []))
+
+    inherited_config = inherit_from.reduce({}) do |config, ancestor_file_path|
+      ancestor_config = load_file(ancestor_file_path, file_type)
+      config.merge(ancestor_config)
+    end
+
+    inherited_config.merge(main_config.except("inherit_from"))
   end
 
   def load_file(file_path, file_type)
@@ -85,21 +111,50 @@ class RepoConfig
   end
 
   def load_javascript_ignore
-    ignore_file = hound_config.fetch("java_script", {}).
+    ignore_file = hound_config.fetch("javascript", {}).
       fetch("ignore_file", ".jshintignore")
 
     commit.file_content(ignore_file)
   end
 
   def parse_yaml(content)
-    YAML.load(content)
-  rescue Psych::SyntaxError
-    {}
+    YAML.safe_load(content, [Regexp])
+  rescue Psych::Exception => e
+    raise_repo_config_parser_error(e)
   end
 
   def parse_json(content)
     JSON.parse(content)
-  rescue JSON::ParserError
-    {}
+  rescue JSON::ParserError => e
+    raise_repo_config_parser_error(e)
+  end
+
+  def raise_repo_config_parser_error(e)
+    message = "#{e.class}: #{e.message}"
+    raise RepoConfig::ParserError.new(message)
+  end
+
+  def convert_legacy_keys(config)
+    converted_config = config.except("java_script", "coffee_script")
+
+    if config["java_script"]
+      converted_config["javascript"] = config["java_script"]
+    end
+    if config["coffee_script"]
+      converted_config["coffeescript"] = config["coffee_script"]
+    end
+
+    converted_config
+  end
+
+  def language_camelize(language)
+    case language.downcase
+    when "coffeescript"
+      "CoffeeScript"
+    when "javascript"
+      "JavaScript"
+    else
+      language.camelize
+    end
   end
 end

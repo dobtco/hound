@@ -2,22 +2,20 @@ module StyleGuide
   class JavaScript < Base
     DEFAULT_CONFIG_FILENAME = "javascript.json"
 
-    def violations_in_file(file)
-      Jshintrb.lint(file.content, config).compact.map do |violation|
-        line = file.line_at(violation["line"])
-
-        Violation.new(
-          filename: file.filename,
-          patch_position: line.patch_position,
-          line: line,
-          line_number: violation["line"],
-          messages: [violation["reason"]]
-        )
+    def file_review(commit_file)
+      FileReview.new(filename: commit_file.filename) do |file_review|
+        Jshintrb.lint(commit_file.content, config).compact.each do |violation|
+          line = commit_file.line_at(violation["line"])
+          file_review.build_violation(line, violation["reason"])
+        end
+        file_review.complete
       end
     end
 
-    def file_included?(file)
-      !excluded_files.any? { |pattern| File.fnmatch?(pattern, file.filename) }
+    def file_included?(commit_file)
+      !excluded_files.any? do |pattern|
+        File.fnmatch?(pattern, commit_file.filename)
+      end
     end
 
     private
@@ -40,7 +38,14 @@ module StyleGuide
     end
 
     def default_config_file
-      DefaultConfigFile.new(DEFAULT_CONFIG_FILENAME, repository_owner).path
+      DefaultConfigFile.new(
+        DEFAULT_CONFIG_FILENAME,
+        repository_owner_name
+      ).path
+    end
+
+    def name
+      "javascript"
     end
   end
 end

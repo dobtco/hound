@@ -1,16 +1,16 @@
 class Repo < ActiveRecord::Base
-  has_many :memberships
-  has_many :users, through: :memberships
   has_many :builds
-
+  has_many :memberships, dependent: :destroy
+  belongs_to :owner
   has_one :subscription
+  has_many :users, through: :memberships
 
   alias_attribute :name, :full_github_name
 
   delegate :type, :price, to: :plan, prefix: true
   delegate :price, to: :subscription, prefix: true
 
-  validates :full_github_name, presence: true
+  validates :full_github_name, uniqueness: true, presence: true
   validates :github_id, uniqueness: true, presence: true
 
   def self.active
@@ -18,8 +18,16 @@ class Repo < ActiveRecord::Base
   end
 
   def self.find_or_create_with(attributes)
-    repo = where(github_id: attributes[:github_id]).first_or_initialize
-    repo.update_attributes(attributes)
+    repo = find_by(full_github_name: attributes[:full_github_name]) ||
+      find_by(github_id: attributes[:github_id]) ||
+      Repo.new
+
+    begin
+      repo.update!(attributes)
+    rescue ActiveRecord::RecordInvalid => error
+      report_update_failure(error, attributes)
+    end
+
     repo
   end
 
@@ -55,6 +63,13 @@ class Repo < ActiveRecord::Base
     ENV["EXEMPT_ORGS"] && ENV["EXEMPT_ORGS"].split(",").include?(organization)
   end
 
+  def total_violations
+    Violation.
+      joins(:file_review).
+      where(file_reviews: { build_id: build_ids }).
+      count
+  end
+
   private
 
   def organization
@@ -62,4 +77,15 @@ class Repo < ActiveRecord::Base
       full_github_name.split("/").first
     end
   end
+
+  def self.report_update_failure(error, attributes)
+    Raven.capture_exception(
+      error,
+      extra: {
+        github_id: attributes[:github_id],
+        full_github_name: attributes[:full_github_name],
+      }
+    )
+  end
+  private_class_method :report_update_failure
 end

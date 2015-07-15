@@ -1,17 +1,18 @@
 class RepoActivator
+  attr_reader :errors
+
   def initialize(github_token:, repo:)
     @github_token = github_token
     @repo = repo
+    @errors = []
   end
 
   def activate
-    activate_repo && enqueue_org_invitation
+    activate_repo.tap { enqueue_org_invitation }
   end
 
   def deactivate
-    change_repository_state_quietly do
-      delete_webhook && repo.deactivate
-    end
+    deactivate_repo
   end
 
   private
@@ -24,16 +25,27 @@ class RepoActivator
     end
   end
 
+  def deactivate_repo
+    change_repository_state_quietly do
+      remove_hound_from_repo
+      delete_webhook && repo.deactivate
+    end
+  end
+
   def change_repository_state_quietly
     yield
   rescue Octokit::Error => error
+    add_error(error)
     Raven.capture_exception(error)
     false
   end
 
+  def remove_hound_from_repo
+    RemoveHoundFromRepo.run(repo.full_github_name, github)
+  end
+
   def add_hound_to_repo
-    github_username = ENV.fetch("HOUND_GITHUB_USERNAME")
-    github.add_user_to_repo(github_username, repo.full_github_name)
+    AddHoundToRepo.run(repo.full_github_name, github)
   end
 
   def github
@@ -47,7 +59,9 @@ class RepoActivator
   end
 
   def enqueue_org_invitation
-    JobQueue.push(OrgInvitationJob)
+    if repo.in_organization?
+      AcceptOrgInvitationsJob.perform_later
+    end
   end
 
   def delete_webhook
@@ -66,5 +80,10 @@ class RepoActivator
     else
       "http"
     end
+  end
+
+  def add_error(error)
+    error_message = ErrorMessageTranslation.from_error_response(error)
+    errors.push(error_message).compact!
   end
 end

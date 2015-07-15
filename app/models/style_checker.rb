@@ -7,22 +7,18 @@ class StyleChecker
     @style_guides = {}
   end
 
-  def violations
-    @violations ||= Violations.new.push(*violations_in_checked_files).to_a
+  def file_reviews
+    commit_files_to_check.map do |commit_file|
+      style_guide(commit_file.filename).file_review(commit_file)
+    end
   end
 
   private
 
   attr_reader :pull_request, :style_guides
 
-  def violations_in_checked_files
-    files_to_check.flat_map do |file|
-      style_guide(file.filename).violations_in_file(file)
-    end
-  end
-
-  def files_to_check
-    pull_request.pull_request_files.reject(&:removed?).select do |file|
+  def commit_files_to_check
+    pull_request.commit_files.select do |file|
       file_style_guide = style_guide(file.filename)
       file_style_guide.enabled? && file_style_guide.file_included?(file)
     end
@@ -32,7 +28,7 @@ class StyleChecker
     style_guide_class = style_guide_class(filename)
     style_guides[style_guide_class] ||= style_guide_class.new(
       config,
-      pull_request.repository_owner
+      pull_request.repository_owner_name
     )
   end
 
@@ -40,10 +36,12 @@ class StyleChecker
     case filename
     when /.+\.rb\z/
       StyleGuide::Ruby
-    when /.+\.coffee(\.js)?\z/
+    when /.+\.coffee(\.js)?(\.erb)?\z/
       StyleGuide::CoffeeScript
     when /.+\.js\z/
       StyleGuide::JavaScript
+    when /.+\.haml\z/
+      StyleGuide::Haml
     when /.+\.scss\z/
       StyleGuide::Scss
     else
