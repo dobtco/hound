@@ -572,8 +572,7 @@ describe StyleGuide::Ruby do
           have_received(:configuration_from_file).with(config_file)
         )
 
-        expect(RuboCop::Cop::Team).to have_received(:new).
-          with(anything, default_configuration, anything)
+        expect(RuboCop::Cop::Team).to have_received(:new)
       end
     end
 
@@ -684,7 +683,11 @@ describe StyleGuide::Ruby do
     private
 
     def violations_in(content, config: nil, repository_owner_name: "ralph")
-      repo_config = double("RepoConfig", enabled_for?: true, for: config)
+      repo_config = double("RepoConfig", enabled_for?: true, for: {
+        "StringLiterals" => {
+          "EnforcedStyle" => "double_quotes"
+        }
+      }.merge(config || {}))
       style_guide = StyleGuide::Ruby.new(repo_config, repository_owner_name)
       style_guide.
         file_review(build_file(content)).

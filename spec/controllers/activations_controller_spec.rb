@@ -84,7 +84,7 @@ describe ActivationsController, "#create" do
       repo = create(:repo, private: true)
       user = create(:user)
       user.repos << repo
-      activator = double("RepoActivator", activate: false)
+      activator = double("RepoActivator", activate: false, errors: [])
       allow(RepoActivator).to receive(:new).and_return(activator)
       stub_sign_in(user)
 
