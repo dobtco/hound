@@ -2,13 +2,13 @@ require "rails_helper"
 
 describe StyleGuide::Scss do
   describe "#file_review" do
-    it "returns an incompleted file review" do
+    it "returns a completed file review" do
       style_guide = build_style_guide
       commit_file = build_commit_file
 
       result = style_guide.file_review(commit_file)
 
-      expect(result).not_to be_completed
+      expect(result).to be_completed
     end
 
     it "schedules a review job" do

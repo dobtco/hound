@@ -13,7 +13,9 @@ module StyleGuide
         config: repo_config.raw_for(LANGUAGE)
       )
 
-      FileReview.new(filename: commit_file.filename)
+      FileReview.new(filename: commit_file.filename).tap do |file_review|
+        file_review.complete
+      end
     end
 
     def file_included?(_)
